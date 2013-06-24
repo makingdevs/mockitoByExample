@@ -5,11 +5,11 @@ public class Calculadora {
   CacheDeCalculadora cacheDeCalculadora;
 
   public Integer suma(Integer a, Integer b){
-    Integer resultado = 0;
+    Integer resultado = new Integer(0);
     if(cacheDeCalculadora.existeElResultadoDeSumar(a,b)){
       resultado = cacheDeCalculadora.obtenerElResultadoDeSumar(a,b);
     } else {
-      resultado = a + b; 
+      resultado = new Integer(a.intValue() + b.intValue()); 
       cacheDeCalculadora.persistirSuma(a,b,resultado);
     }
     return resultado;
