@@ -6,13 +6,14 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.runners.MockitoJUnit44Runner;
 import org.mockito.Mock;
+import org.mockito.InjectMocks;
 
 @RunWith(MockitoJUnit44Runner.class) // Nos ayudamos de este runner en JUnit para usar las anotaciones de Mockito
 public class CalculadoraTests {
 
   @Mock CacheDeCalculadora cacheDeCalculadora; // Este es mi colaborador
 
-  Calculadora calculadora = new Calculadora();
+  @InjectMocks Calculadora calculadora = new Calculadora(); // Clase principal a probar
 
   @Test
   public void pruebaSumaDeDosNumeros(){
