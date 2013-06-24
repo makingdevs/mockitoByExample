@@ -1,0 +1,46 @@
+En esta ocasión, con la finalidad de aportar algo a la comunidad(y ver si de paso me gano un pase) les quiero poner un tema que les de a conocer una herramienta que puedan usar los que están haciendo desarrollo en Java.
+
+Les platico brevemente el escenario que me ha puesto a escribir de este tema: hace un par de meses me asignaron a la tarea de hacer el mentoring de un grupo de desarrolladores, el objetivo era "aumentar la calidad del software que se desarrollaba", y esto lo fui elaborando a través de varias técnicas: programación en pares, dojos, control de versiones, mediciones de tiempos, pomodoros, etc., y la guía técnica para ir creciendo un proyecto con Java; yo vengo desarrollado Groovy desde hace mucho tiempo y esto se me hizo interesante para medir nuevamente el tiempo de desarrollo de un proyecto con Java. El factor común de todos era Maven y por supuesto Java(en varios niveles de experiencia), lo cual lo hacía más interesante.
+
+En mi humilde opinión, uno de los tantos factores para mejorar la calidad del software que se escribe son las pruebas, y para este equipo eran un mundo desconocido(a excepción de uno de ellos), lo cual fue bueno por que podrían aprenderlas sin vicios y diferenciarlas desde un principio, y malo por que no tenían pruebas de ningún software. Su proceso de desarrollo para determinar si un fragmento de código funcionaba era tardado, y gracias a esto, también fuimos tomando también un mejor ritmo.
+
+Siempre se confunden las pruebas de integración con las pruebas de unidad, yo lo hice, y supongo que fue por el nombre del framework: JUnit. Creo que la parte de Unit es la que nos indica que el framework hace pruebas de "unidad", y las hace realmente, solamente que nuestra concepción debe ampliarse más para entender los preceptos de la terminología. Para ayudarme a explicar esto voy a escribir mi concepción(muy simple) de tres términos:
+
+<ul>
+  <li>Pruebas de unidad: Son del tipo que determinan si un componente funciona de cierta forma esperada, bajos ciertos escenarios controlados y bien definidos, y excluyen el buen o mal funcionamiento de los elementos que colaboran con el mismo, pues no es de la incumbencia del elemento bajo ejecución, pero deben indicarnos que los mensajes a dichos elementos ajenos y externos deben ser enviados.(Aquí recomiendo una referencia al libro de Pragmatic Programmer capítulos 21, 23 y 34).</li>
+  <li>Pruebas de integración: Son aquellas que determinan que un componente se ejecuta correctamente incluyendo las interacciones con sus componentes asociados, los cuales también deben estar listos para ser invocados.</li>
+  <li>Pruebas de sistema: Son aquellas que ayudan a determinar si un flujo de negocio se ejecuto de manera correcta dadas ciertas condiciones y ambientes, y por lo general incluyen a varios componentes en su estructura.</li>
+</ul>
+
+Siendo esto muy breve, quiero enfocarme en las primeras, las pruebas de unidad, y me voy a basar en un ejemplo, dado que tengo la siguiente prueba:
+
+<code>
+package com.makingdevs;
+
+import static org.junit.Assert.*;
+import org.junit.Test;
+
+public class CalculadoraTests {
+
+  @Test
+  public void pruebaSumaDeDosNumeros(){
+    Calculadora calculadora = new Calculadora();
+    Integer resultado = calculadora.suma(4,5);
+    assertTrue(9 == resultado);
+  }
+}
+</code>
+
+El código que lo resuelve es muy sencillo:
+
+<code>
+package com.makingdevs;
+
+public class Calculadora {
+  public Integer suma(Integer a, Integer b){
+    return a+b;
+  }
+}
+</code>
+
+Como ven, no hay necesidad de llamar a nada más que un método sencillo de un objeto. Hasta aquí nada complicado, pero, <b>¿que pasa si deseamos hacer uso de un caché?</b>, y esto va con el afán de que ustedes puedan extrapolar este conocimiento a sus componentes de aplicaciones que estén desarrollando y probando, especialmente servicios de negocio y controladores de frameworks MVC.
