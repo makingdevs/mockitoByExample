@@ -27,4 +27,15 @@ public class CalculadoraTests {
     assertTrue(8 == resultado);
     verify(cacheDeCalculadora).persistirSuma(6,2); // ¿En verdad se llamo a este método? 
   }
+  
+  @Test
+  public void pruebaSumaDeDosNumerosObteniendoResultadoDeCache(){
+    when(cacheDeCalculadora.existeElResultadoDeSumar(10,4)).thenReturn(true); // Simulamos el comportamiento de un método
+    when(cacheDeCalculadora.obtenerElResultadoDeSumar(10,4)).thenReturn(14); // Aislamos el componente 
+    Integer resultadoEnSegundaEjecucion = calculadora.suma(10,4);
+    assertTrue(14 == resultadoEnSegundaEjecucion);
+    verify(cacheDeCalculadora,never()).persistirSuma(6,2); // Este método no debe ejecutarse
+    verify(cacheDeCalculadora).existeElResultadoDeSumar(10,4);
+    verify(cacheDeCalculadora).obtenerElResultadoDeSumar(10,4);
+  }
 }
