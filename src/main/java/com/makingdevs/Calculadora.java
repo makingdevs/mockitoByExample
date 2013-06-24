@@ -5,7 +5,13 @@ public class Calculadora {
   CacheDeCalculadora cacheDeCalculadora;
 
   public Integer suma(Integer a, Integer b){
-    cacheDeCalculadora.persistirSuma(a,b);
-    return a+b;
+    Integer resultado = 0;
+    if(cacheDeCalculadora.existeElResultadoDeSumar(a,b)){
+      resultado = cacheDeCalculadora.obtenerElResultadoDeSumar(a,b);
+    } else {
+      resultado = a + b; 
+      cacheDeCalculadora.persistirSuma(a,b,resultado);
+    }
+    return resultado;
   }
 }
