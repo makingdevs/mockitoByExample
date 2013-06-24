@@ -44,3 +44,188 @@ public class Calculadora {
 </code>
 
 Como ven, no hay necesidad de llamar a nada más que un método sencillo de un objeto. Hasta aquí nada complicado, pero, <b>¿que pasa si deseamos hacer uso de un caché?</b>, y esto va con el afán de que ustedes puedan extrapolar este conocimiento a sus componentes de aplicaciones que estén desarrollando y probando, especialmente servicios de negocio y controladores de frameworks MVC.
+
+Supongase que ahora tenemos la siguiente prueba:
+
+<code>
+  @Test
+  public void pruebaSumaDeDosNumerosGuardandoEnCache(){
+    Calculadora calculadora = new Calculadora();
+    Integer resultado = calculadora.suma(4,5);
+    assertTrue(9 == resultado);
+    // ¿Como comprobamos la llamada a un servicio de cache? 
+  }
+</code>
+
+Siguiendo la inercia del desarrollo podremos hacer algo como lo siguiente:
+<code>
+
+  public Integer suma(Integer a, Integer b){
+    // Pon aquí todo el código del caché
+    return a+b;
+  }
+</code>
+
+Y hacer mediciones de tiempo para determinar que el caché es más rapido que la operación per se, etc.; sin embargo, seguiremos sin conocer si estamos llamando a algún componente que me haga el caché. 
+
+NOTA: Todos los elementos o componentes que están involucrados en el código que se esta probando de forma unitaria son conocidos como colaboradores.
+
+Por lo tanto siguiendo un poco de diseño de software simple(Single Responsability), determinemos que necesitamos un colaborador que me permita guardar en caché la operación en cuestión. Y tenemos más de una prueba ahora, por lo tanto podemos reestructurar nuestra prueba de la siguiente manera:
+<code>
+  Calculadora calculadora = new Calculadora();
+
+  @Test
+  public void pruebaSumaDeDosNumeros(){
+    Integer resultado = calculadora.suma(4,5);
+    assertTrue(9 == resultado);
+  }
+  
+  @Test
+  public void pruebaSumaDeDosNumerosGuardandoEnCache(){
+    Integer resultado = calculadora.suma(6,2);
+    assertTrue(8 == resultado);
+    // ¿Como comprobamos la llamada a un servicio de cache? 
+  }
+</code>
+
+Introduzcamos a Mockito como nuestro bartender en esta prueba, e identifiquemos que la clase que esta en la lupa es Calculadora y que necesita un elemento colaborador de caché, el cual llamaremos CacheDeCalculadora, adicionalmente, necesitaremos usar algún método(que todavía no existe) de dicho colaborador que "ejecute" la persistencia en el caché.
+
+Hagamos uso de Mockito en nuestra prueba:
+<code>
+package com.makingdevs;
+
+import static org.junit.Assert.*;
+import static org.mockito.Mockito.*;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.mockito.runners.MockitoJUnit44Runner;
+import org.mockito.Mock;
+import org.mockito.InjectMocks;
+
+@RunWith(MockitoJUnit44Runner.class) // Nos ayudamos de este runner en JUnit para usar las anotaciones de Mockito
+public class CalculadoraTests {
+
+  @Mock CacheDeCalculadora cacheDeCalculadora; // Este es mi colaborador
+
+  @InjectMocks Calculadora calculadora = new Calculadora(); // Clase principal a probar
+
+  @Test
+  public void pruebaSumaDeDosNumeros(){
+    Integer resultado = calculadora.suma(4,5);
+    assertTrue(9 == resultado);
+  }
+  
+  @Test
+  public void pruebaSumaDeDosNumerosGuardandoEnCache(){
+    Integer resultado = calculadora.suma(6,2);
+    assertTrue(8 == resultado);
+    verify(cacheDeCalculadora).persistirSuma(6,2,8); // ¿En verdad se llamo a este método? 
+  }
+}
+</code>
+
+Si ejecutamos esta prueba, con dichos cambios, saltarán errores de compilación obvios, como el de no se encuentra dicha clase CacheDeCalculadora, y claro, por que no se ha creado. Simplemente agregando una interfaz y el método con dicha firma ejecutaré la prueba para dar pie a las bondades que me ofrece mockito.
+<code>
+package com.makingdevs;
+
+public interface CacheDeCalculadora {
+  void persistirSuma(Integer a, Integer b, Integer resultado);
+}
+</code>
+
+Ahora bien, el error que tengo es el siguiente:
+
+<i>
+Wanted but not invoked:
+cacheDeCalculadora.persistirSuma(6, 2, 8);
+-> at com.makingdevs.CalculadoraTests.pruebaSumaDeDosNumerosGuardandoEnCache(CalculadoraTests.java:27)
+Actually, there were zero interactions with this mock.
+</i>
+
+El cual me indica que deberé de llamar a un elemento colaborador en cierto método, ¿que debo hacer? declararlo y llamarlo.
+<code>
+package com.makingdevs;
+
+public class Calculadora {
+
+  CacheDeCalculadora cacheDeCalculadora;
+
+  public Integer suma(Integer a, Integer b){
+    cacheDeCalculadora.persistirSuma(a,b,a+b);
+    return a+b;
+  }
+}
+</code>
+
+Una vez que ejecute esta prueba el resultado deberá ser satisfactorio.
+
+Ahora bien, la lógica de como funciona la persistencia o bien en donde lo está haciendo de momento no me importa, pues sólo quiero corroborar que llame al método, eso es lo que me importa.
+
+Para concluir con la lógica completa abarcaré un caso más, el cuál es entregar el resultado del caché en dado caso de que previamente se hubiese ejecutado, verificando que en dicho caso no persista la operación suma que estoy haciendo pues sería inútil y sin congruencia con la lógica que estoy queriendo hacer. Lo cual me quedaría algo así:
+
+<code>
+  @Test
+  public void pruebaSumaDeDosNumerosObteniendoResultadoDeCache(){
+    when(cacheDeCalculadora.existeElResultadoDeSumar(10,4)).thenReturn(true); // Simulamos el comportamiento de un método
+    when(cacheDeCalculadora.obtenerElResultadoDeSumar(10,4)).thenReturn(14); // Aislamos el componente 
+    Integer resultadoEnSegundaEjecucion = calculadora.suma(10,4);
+    assertTrue(14 == resultadoEnSegundaEjecucion);
+    verify(cacheDeCalculadora,never()).persistirSuma(10,4,14); // Este método no debe ejecutarse
+    verify(cacheDeCalculadora).existeElResultadoDeSumar(10,4);
+    verify(cacheDeCalculadora).obtenerElResultadoDeSumar(10,4);
+  }
+</code>
+
+Obsérverse que hemos agregado comportamiento aislado y controlado del colaborador, y como nota extra estamos dando pie a los elementos que necesitamos agregar en nuestra implementación. Corriendo esto nos mandará los respectivo errores de compilación por que dichos métodos no existen. Sólo hay que agregarlos:
+
+<code>
+package com.makingdevs;
+
+public interface CacheDeCalculadora {
+  void persistirSuma(Integer a, Integer b, Integer r);
+  boolean existeElResultadoDeSumar(Integer a, Integer b);
+  Integer obtenerElResultadoDeSumar(Integer a, Integer b);
+}
+</code>
+
+Una vez ejecutado obtenemos un resultado interesante:
+
+<i>
+Wanted but not invoked:
+cacheDeCalculadora.existeElResultadoDeSumar(
+    10,
+    4
+);
+-> at com.makingdevs.CalculadoraTests.pruebaSumaDeDosNumerosObteniendoResultadoDeCache(CalculadoraTests.java:38)
+
+However, there were other interactions with this mock:
+-> at com.makingdevs.Calculadora.suma(Calculadora.java:8)>
+</i>
+
+Para hacer que esta prueba pase tendremos que hacer dicha validación, lo cual quedaría como lo siguiente:
+<code>
+  public Integer suma(Integer a, Integer b){
+    Integer resultado = 0;
+    if(cacheDeCalculadora.existeElResultadoDeSumar(a,b)){
+      resultado = cacheDeCalculadora.obtenerElResultadoDeSumar(a,b);
+    } else {
+      resultado = a + b; 
+      cacheDeCalculadora.persistirSuma(a,b,resultado);
+    }
+    return resultado;
+  }
+</code>
+
+Ejecutando esta prueba habremos de tener todo corriendo de manera satisfactoria. Y aunque no es de importancia para este caso como es que se va a guardar el caché tengo la certeza de que dicho método en esta lógica serña llamado en los casos en los que no exista dicho componente.
+
+Me gustaría que el lector pudiera extrapolar este funcionamiento con DAO's u otros métodos de servicios que colaboran en la lógica de algún componente importante de su aplicación, en donde tenemos que desarrollar la lógica más elaborada para resolver un problema, pasar por ciertas condicionantes o bien saber que ciertos componentes deberán ser invocados en cierta cantidad de veces, o bien, no deberían llamarse, como ha sido este caso.
+
+Sin lugar a dudas, hay muchas más cosas que mockito puede hacer para ayudarnos a determinar los comportamientos que ciertos componentes de nuestra aplicación debeierán tener, sin embargo, les recomiendo le echen un ojo al sitio de Mockito y a la documentación. https://code.google.com/p/mockito/
+
+Para mejor referencia les dejo el repositorio de código en mi cuenta de github para que lo descarguen y puedan probarlo por ustedes mismos. Las ejecuciones s epueden hacer usando gradle o maven. Y también les recomiendo un artículo escrito por Alfredo Chávez en el sitio de Artesano.de/software, muy recomendable: TDD Cómo y porqué: Una guía para los no iniciados http://artesanos.de/software/2012/02/13/tdd-como-y-porque-una-guia-para-los-no-iniciados/
+
+Espero que les sirva tanto como a mi me sirvió.
+
+Repositorio de Github: 
+
+Saludos a todos
