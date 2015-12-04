@@ -28,6 +28,21 @@ public class CalculadoraTests {
     verify(cacheDeCalculadora).persistirSuma(6,2,8); // ¿En verdad se llamo a este método? 
   }
   
+   @Test
+  public void pruebaSumaBasica(){
+    Integer resultado = calculadora.suma(1,10);
+    assertTrue(8 == resultado);
+    verify(cacheDeCalculadora).persistirSuma(6,2,8); // ¿En verdad se llamo a este método? 
+  }
+
+  @Test
+  public void pruebaRestaBasica(){
+    Integer resultado = calculadora.resta(10,5);
+    assertTrue(5 == resultado);
+  }
+
+
+
   @Test
   public void pruebaSumaDeDosNumerosObteniendoResultadoDeCache(){
     when(cacheDeCalculadora.existeElResultadoDeSumar(10,4)).thenReturn(true); // Simulamos el comportamiento de un método
