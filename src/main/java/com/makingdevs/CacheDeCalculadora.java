@@ -8,7 +8,6 @@ public interface CacheDeCalculadora {
   void persistirResta(Integer a, Integer b, Integer r);
   boolean existeElResultadoDeResta(Integer a, Integer b);
   Integer obtenerElResultadoDeResta(Integer a, Integer b);
-
 }
 
 
