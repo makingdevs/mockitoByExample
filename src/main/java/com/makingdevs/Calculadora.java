@@ -14,7 +14,7 @@ public class Calculadora {
     }
     return resultado;
   }
-
+  
   //Genera resta
   public Integer resta(Integer a, Integer b){
     Integer resultado = new Integer(0);
