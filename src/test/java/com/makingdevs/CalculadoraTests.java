@@ -35,7 +35,7 @@ public class CalculadoraTests {
     verify(cacheDeCalculadora).persistirSuma(6,2,8); // ¿En verdad se llamo a este método? 
   }
 
-   @Test
+  @Test
   public void pruebaRestaBasica(){
     Integer resultado = calculadora.resta(10,5);
     assertTrue(5 == resultado);
